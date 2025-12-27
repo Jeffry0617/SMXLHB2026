@@ -1,0 +1,408 @@
+<style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    html, body {
+      width: 100%;
+      height: 100%;
+      background: radial-gradient(ellipse at center, #0d0221 0%, #110e1b 100%);
+      overflow: hidden;
+      perspective: 1000px;
+      font-family: sans-serif;
+    }
+	
+	#loading {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100vw;
+      height: 100vh;
+      background: #000;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: #fff;
+      font-size: 30px;
+      z-index: 10000; 
+    }
+	
+	#loading::after {
+      content: " .";
+      animation: dots 1.5s infinite steps(3, end);
+    }
+    @keyframes dots {
+      0% { content: " ."; }
+      33% { content: " .."; }
+      66% { content: " ..."; }
+    }
+
+    .star-field {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100vw;
+      height: 100vh;
+      z-index: 1;
+      pointer-events: none;
+    }
+
+    .meteor {
+      position: absolute; /* 绝对定位，随意放在屏幕上 */
+      width: 2px; /* 流星的宽度 */
+      height: 120px; /* 流星的长度 */
+      background: linear-gradient(to bottom, #8a2be2, rgba(0, 255, 255, 0));  /* 紫色到透明的渐变 → 看起来像一条光带 */
+      transform: rotate(45deg); /* 斜着放，形成对角线方向的流星 */
+      opacity: 0.8; /* 半透明，看起来更自然 */
+      animation: meteor-fall linear infinite;
+    }
+
+    @keyframes meteor-fall {
+      0% {opacity: 1;
+          transform: translate(-10vw, -100vh) rotate(45deg);
+         }
+      100% {opacity: 0;
+          transform: translate(100vw, 100vh) rotate(45deg);
+         }
+    }
+	
+    /* 放大后的浪漫文字样式 */
+    .modal-text {
+      opacity: 0;
+      transition: opacity 1s ease-in-out;
+      position: absolute;
+      bottom: 10%;
+      left: 50%;
+      transform: translateX(-50%);
+      color: white;
+      -webkit-background-clip: padding-box;
+      font-weight: bold;  /* 加粗 */
+      text-shadow: 2px 2px 4px rgba(0,0,0,0.7); 
+      background: linear-gradient(90deg); 
+      background-size: 200% auto;
+      font-size: 1.5rem;
+      text-align: center;
+      max-width: 80%;
+      font-family: "Comic Sans MS", cursive, sans-serif;
+      animation: blinkText 1.5s infinite;
+      pointer-events: none; /* 避免文字挡住点击关闭 */
+    }
+
+    /* blinkText 只管透明度 */
+    @keyframes blinkText {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.5; }
+    }
+
+    .carousel {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform-style: preserve-3d;
+      transform: translate(-50%, -50%);
+      width: 280px;
+      height: 180px;
+      animation: spin 80s linear infinite;
+      z-index: 2;
+	  border: 4px solid transparent;
+    }
+
+    .carousel img {
+      position: absolute;
+      width: 150px;
+      height: 150px;
+      border-radius: 20px;
+      border: 3px solid #fff;
+      object-fit: contain;
+      background-color: #000;
+      box-shadow: 0 0 20px rgba(138, 43, 226, 0.5);
+      cursor: pointer;
+      transition: transform 0.3s ease, box-shadow 0.3s ease;
+    }
+
+    .carousel img:hover {
+      transform: scale(1.2) rotateZ(3deg); /* 放大+轻微倾斜 */
+      box-shadow: 0 0 30px rgba(255, 215, 0, 0.9), 
+                  0 0 60px rgba(138, 43, 226, 0.8);
+      z-index: 5; /* 保证悬停图片在最上层 */
+    }
+
+    @keyframes spin {
+      from { transform: translate(-50%, -50%) rotateY(0deg); }
+      to   { transform: translate(-50%, -50%) rotateY(-360deg); }
+    }
+
+    .caption {
+      position: fixed;
+      bottom: 20px;
+      width: 100%;
+      text-align: center;
+      color: #ffffff;
+      font-size: 50px;
+      font-weight: bold;
+      z-index: 3;
+      text-shadow:0 0 8px rgba(138, 43, 226, 0.8);
+	  font-family:'Playfair Display', serif;
+    }
+
+    #lightbox {
+      display: none;
+      position: fixed;
+      z-index: 999;
+      top: 0; left: 0;
+      width: 100vw;
+      height: 100vh;
+      background: linear-gradient(135deg, rgba(0,0,0,0.7), rgba(50,50,50,0.4));
+      backdrop-filter: blur(10px);
+      justify-content: center;
+      align-items: center;
+    }
+
+    #lightbox img {
+      max-width: 90vw;
+      max-height: 90vh;
+      border-radius: 10px;
+      box-shadow: 0 0 20px #fff;
+    }
+
+    #lightbox:active {
+      display: none;
+    }
+	
+	.stars-background {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100vw;   /* 改回标准大小 */
+      height: 100vh;
+      z-index: -1;    /* 保证在内容下方 */
+      pointer-events: none; /* 避免阻挡交互 */
+      background: black; /* 或者渐变背景 */
+      will-change: transform, opacity;
+    }
+
+    .star {
+      position: absolute;
+      width: 3px;
+      height: 3px;
+      background: gold;
+      border-radius: 50%;
+      opacity: 1.0;
+      animation: twinkle linear infinite;
+      animation-duration: calc(5s + 5s * var(--rand)); /* 5-10秒 */
+      animation-delay: calc(3s * var(--rand)); /* 随机延迟 */
+    }
+	
+    .star.small { width: 2px; height: 2px; opacity: 0.6; }
+    .star.medium { width: 3px; height: 3px; opacity: 0.8; }
+    .star.large { width: 5px; height: 5px; opacity: 1; }
+	
+    @keyframes twinkle {
+      0%, 100% { opacity: 0.2; }
+      50% { opacity: 1; }
+    }
+	
+	.hint {
+      position: fixed;
+      bottom: 600px;   /* 在caption上方 */
+      width: 100%;
+      text-align: center;
+      color: #ffd700;
+      font-size: 20px;
+      z-index: 3;
+	  text-shadow: 0 0 8px #ffd700, 0 0 12px #ffae00;
+      animation: blink 1.5s infinite, soft-blink 2s ease-in-out infinite;
+    }
+	
+	@keyframes soft-blink {
+      0%, 100% { opacity: 0.6; }
+      50% { opacity: 1; }
+    }
+
+    @keyframes blink {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.4; }
+    }
+	
+	/* 🎵 按钮 */
+    #musicBtn {
+      position: fixed;
+      top: 20px;
+      left: 20px;
+      z-index: 999;
+      font-size: 16px;
+      padding: 10px 18px;
+      border-radius: 30px;
+      background: rgba(138, 43, 226, 0.2);
+      color: #fff;
+      border: 1px solid #8a2be2;
+      backdrop-filter: blur(4px);
+      cursor: pointer;
+      transition: background 0.3s ease;
+      box-shadow: 0 0 15px rgba(138, 43, 226, 0.5);
+      animation: glow 2.5s infinite ease-in-out;
+    }
+	/* 呼吸光晕效果 */
+    @keyframes glow {
+      0%   { box-shadow: 0 0 5px rgba(138, 43, 226, 0.4), 0 0 10px rgba(138, 43, 226, 0.3); }
+      50%  { box-shadow: 0 0 20px rgba(138, 43, 226, 0.9), 0 0 40px rgba(138, 43, 226, 0.6); }
+      100% { box-shadow: 0 0 5px rgba(138, 43, 226, 0.4), 0 0 10px rgba(138, 43, 226, 0.3); }
+    }
+    #musicBtn:hover {
+      background: rgba(138, 43, 226, 0.4);
+    }
+
+    /* 🌟 星星光晕层 */
+    .star-glow {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100vw;
+      height: 100vh;
+      z-index: 0; /* 在云雾之上，相册之下 */
+      pointer-events: none;
+    }
+
+    .star-glow span {
+      position: absolute;
+      width: 6px;
+      height: 6px;
+      background: radial-gradient(circle, rgba(255,255,200,0.9) 0%, transparent 70%);
+      border-radius: 50%;
+      animation: glowTwinkle infinite;
+    }
+
+    @keyframes glowTwinkle {
+      0%, 100% { transform: scale(0.6); opacity: 0.3; }
+      50% { transform: scale(1.3); opacity: 1; }
+    }
+	
+	.star-glow span.big {
+      width: 12px;
+      height: 12px;
+      background: radial-gradient(circle, rgba(255,255,180,1) 0%, transparent 80%);
+    }
+
+    .star-glow span.small {
+      width: 4px;
+      height: 4px;
+      background: radial-gradient(circle, rgba(200,200,255,0.7) 0%, transparent 80%);
+    }
+
+    /* ✨ 粒子效果 */
+    .emoji-particle {
+      position: fixed;
+      font-size: 20px;
+      pointer-events: none;
+      animation: floatUp 1.5s linear forwards;
+    }
+
+    @keyframes floatUp {
+      0%   { transform: translate(0, 0) scale(1); opacity: 1; }
+      50%  { transform: translate(20px, -60px) scale(0.7); opacity: 0.7; }
+      100% { transform: translate(-20px, -120px) scale(0.3); opacity: 0; }
+    }
+
+    /* Emoji 拖尾 + 渐变发光 */
+    .emoji {
+      position: absolute;
+      pointer-events: none;
+      font-size: 22px;
+      animation: floatUp 1.5s ease-out forwards, gradientMove 2s ease infinite;
+      opacity: 0.9;
+      filter: drop-shadow(0 0 6px rgba(255,255,255,0.8));
+	  background-size: 100% 100%;
+    }
+	
+	@keyframes gradientMove {
+      0% { background-position: 0% 50%; }
+      50% { background-position: 100% 50%; }
+      100% { background-position: 0% 50%; }
+    }
+
+    @keyframes floatUp {
+      from { transform: translate(-50%, -50%) scale(1); opacity: 1; }
+      to   { transform: translate(-50%, -150%) scale(0.8); opacity: 0; }
+    }
+
+    /* 烟花点带渐变 */
+    .dot {
+      position: absolute;
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      opacity: 0.9;
+      pointer-events: none;
+      animation: explode 0.8s ease-out forwards;
+      background: radial-gradient(circle, #fff, var(--color));
+      filter: blur(1px) brightness(1.4);
+    }
+
+    @keyframes explode {
+      from { transform: translate(0,0) scale(1); opacity: 1; }
+      to   { transform: translate(var(--x), var(--y)) scale(0.3); opacity: 0; }
+    }
+
+    /* ✨ 粒子光点 */
+    .light-particle {
+      position: absolute;
+      width: 6px;
+      height: 6px;
+      background: radial-gradient(circle, rgba(255,255,255,0.9), rgba(255,255,255,0));
+      border-radius: 50%;
+      pointer-events: none;
+      animation: float 10s infinite ease-in-out;
+    }
+
+    @keyframes float {
+      0%   { transform: translateY(0) scale(1); opacity: 0.7; }
+      50%  { transform: translateY(-50px) scale(1.2); opacity: 1; }
+      100% { transform: translateY(0) scale(1); opacity: 0.7; }
+    }
+
+    /* 🌠 新的流星效果 */
+    .shooting-star {
+      position: absolute;
+      width: 2px;
+      height: 80px;
+      background: linear-gradient(to bottom, rgba(255,255,255,1), rgba(255,255,255,0));
+      filter: drop-shadow(0 0 6px rgba(255,255,255,0.8));
+      transform: rotate(45deg);
+      opacity: 0;
+      animation: shooting 3s linear infinite;
+    }
+
+    @keyframes shooting {
+      0%   { transform: translate(-10vw, -10vh) rotate(45deg); opacity: 1; }
+      80%  { opacity: 1; }
+      100% { transform: translate(100vw, 100vh) rotate(45deg); opacity: 0; }
+    }
+	
+	/* 背景光斑脉动效果 */
+	#blobBackground {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      pointer-events: none;
+      z-index: 0; /* 放在最底层，作为背景 */
+      overflow: hidden;
+    }
+
+    .blob {
+      position: absolute;
+      border-radius: 50%;
+      filter: blur(60px); /* 创建模糊的光晕效果 */
+      opacity: 0.2;
+      mix-blend-mode: screen;
+      will-change: transform, opacity;
+      background: radial-gradient(circle, rgba(255,0,150,0.6), rgba(255,0,150,0));
+      animation: blobFloat 20s infinite linear;
+    }
+
+    @keyframes blobFloat {
+      0% {transform: translate(0, 0) scale(1);}
+      33% {transform: translate(30vw, 20vh) scale(1.3);}
+      66% {transform: translate(-20vw, 40vh) scale(0.8);}
+      100% {transform: translate(0, 0) scale(1);}
+    }
+
+  </style>
